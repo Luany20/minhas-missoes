@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pesquisa Pós-Uso por E-mail — Itaú Seguros</title>
+<link rel="icon" href="data:,">
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body, .app-raiz, .mail-fundo, .inbox-fundo { margin: 0; }
+
+  /* ===== Caixa de entrada (lobby de e-mails) ===== */
+  .inbox-fundo {
+    min-height: 100vh;
+    width: 100%;
+    background: #F3F2F1;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    color: #201F1E;
+  }
+  .inbox-topo {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E1DFDD;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .inbox-titulo {
+    font-size: 19px;
+    font-weight: 700;
+    color: #201F1E;
+  }
+  .inbox-lista {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+  }
+  .inbox-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 16px 20px;
+    border: none;
+    border-bottom: 1px solid #F3F2F1;
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: background 120ms ease;
+    width: 100%;
+  }
+  .inbox-item:hover { background: #FAF9F8; }
+  .inbox-item-conteudo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .inbox-item-linha-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .inbox-item-remetente {
+    font-size: 14px;
+    font-weight: 700;
+    color: #201F1E;
+  }
+  .inbox-item-hora {
+    font-size: 11.5px;
+    color: #8A8886;
+    flex: none;
+    margin-left: 8px;
+  }
+  .inbox-item-assunto {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #201F1E;
+  }
+  .inbox-item-preview {
+    font-size: 12.5px;
+    color: #605E5C;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ===== Casca de e-mail (Outlook) ===== */
+  .mail-fundo {
+    min-height: 100vh;
+    width: 100%;
+    background: #F3F2F1;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    color: #201F1E;
+  }
+  .mail-faixa-ribbon {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E1DFDD;
+    padding: 10px 16px;
+    font-size: 12.5px;
+    color: #323130;
+  }
+  .mail-ribbon-sep {
+    width: 1px;
+    height: 16px;
+    background: #E1DFDD;
+  }
+  .mail-voltar-btn {
+    background: transparent;
+    border: none;
+    color: #0F6CBD;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px 4px 0;
+  }
+  .mail-voltar-btn:hover { text-decoration: underline; }
+  .mail-remetente {
+    background: #FFFFFF;
+    padding: 14px 20px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 1px solid #F3F2F1;
+  }
+  .mail-remetente-linha {
+    font-size: 14px;
+    font-weight: 600;
+    color: #201F1E;
+  }
+  .mail-destinatario-linha {
+    font-size: 12.5px;
+    color: #605E5C;
+  }
+  .mail-aviso-imagens {
+    background: #FFF4CE;
+    color: #4A3B00;
+    font-size: 12.5px;
+    padding: 8px 20px;
+    border-bottom: 1px solid #E1DFDD;
+  }
+
+  .mail-corpo {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #FFFFFF;
+    padding: 24px 24px 40px;
+  }
+
+  .banner-laranja-email {
+    background: linear-gradient(160deg, #F4941E 0%, #C1440E 100%);
+    padding: 22px 24px;
+    margin-bottom: 22px;
+  }
+  .banner-titulo-email {
+    color: #fff;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .mail-tabela-info {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+  }
+  .mail-tabela-info td {
+    border: 1px solid #D8C6AE;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: #2B2B2B;
+  }
+
+  .mail-saudacao {
+    color: #C1440E;
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 10px;
+  }
+  .mail-paragrafo {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2B2B2B;
+    margin: 0 0 12px;
+  }
+  .mail-rotulo {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #4A3B2E;
+    margin: 14px 0 2px;
+  }
+  .mail-valor {
+    font-size: 14px;
+    color: #2B2B2B;
+    margin: 0;
+  }
+  .mail-nota-depreciacao {
+    font-size: 12.5px;
+    color: #6B6B6B;
+    line-height: 1.6;
+    margin: 18px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid #EDEDED;
+  }
+
+  .mail-lista-passos {
+    margin: 8px 0 4px;
+    padding-left: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mail-lista-passos li {
+    font-size: 14px;
+    line-height: 1.55;
+    color: #2B2B2B;
+  }
+
+  .cta-pesquisa-card {
+    background: linear-gradient(160deg, #F4941E 0%, #C1440E 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin: 22px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  .cta-pesquisa-titulo {
+    font-size: 17px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0;
+  }
+  .cta-pesquisa-texto {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #FFF3E8;
+    margin: 0 0 6px;
+  }
+  .cta-pesquisa-botao {
+    align-self: center;
+    background: #FFFFFF;
+    color: #C1440E;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 120ms ease;
+    margin-top: 4px;
+  }
+  .cta-pesquisa-botao:hover { filter: brightness(0.97); }
+
+  .mail-caixa-cinza {
+    background: #F3F2F1;
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin: 18px 0;
+  }
+  .mail-link {
+    color: #C1440E;
+    text-decoration: underline;
+    word-break: break-all;
+  }
+
+  .mail-slogan {
+    color: #C1440E;
+    font-weight: 800;
+    font-size: 16px;
+    margin: 20px 0 14px;
+  }
+
+  .mail-canais {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  .mail-canais-titulo {
+    color: #C1440E;
+    font-weight: 700;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .mail-canais-divisor {
+    width: 1px;
+    align-self: stretch;
+    background: #D8C6AE;
+  }
+  .mail-canais-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13.5px;
+    color: #2B2B2B;
+  }
+
+  .mail-linha {
+    border: none;
+    border-top: 1px solid #E1DFDD;
+    margin: 18px 0;
+  }
+  .mail-rodape-tel {
+    font-size: 12px;
+    color: #605E5C;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* ===== Tela Carta / Pesquisa (padrão Itaú) ===== */
+  .tela-carregando {
+    min-height: 100vh; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff;
+  }
+  .loading-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #C1440E;
+    animation: pulso 1s ease-in-out infinite;
+  }
+  @keyframes pulso {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .app-raiz {
+    min-height: 100vh;
+    width: 100%;
+    background: #E9E9E9;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #2B2B2B;
+  }
+
+  .carta {
+    width: 100%;
+    max-width: 520px;
+    background: #FFFFFF;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .pesquisa-voltar-btn {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .pesquisa-voltar-btn:hover { opacity: 0.8; }
+
+  .barra-progresso-wrap {
+    padding: 16px 26px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #F3E9DC;
+  }
+  .barra-progresso-trilho {
+    width: 100%;
+    height: 5px;
+    border-radius: 999px;
+    background: #F0DCC8;
+    overflow: hidden;
+  }
+  .barra-progresso-preenchida {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #F4941E 0%, #C1440E 100%);
+    transition: width 320ms ease;
+  }
+
+  .banner-laranja {
+    background: linear-gradient(160deg, #F4941E 0%, #C1440E 100%);
+    padding: 52px 26px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .banner-titulo {
+    color: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 25px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin: 0;
+    max-width: 420px;
+  }
+
+  .corpo-carta {
+    padding: 26px 26px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .saudacao {
+    color: #C1440E;
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0;
+  }
+
+  .paragrafo {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: #2B2B2B;
+    margin: 0;
+  }
+
+  .pergunta-titulo {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.45;
+    color: #1A1A1A;
+    margin: 4px 0 4px;
+  }
+
+  .notas-grade {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin: 6px 0 6px;
+    width: 100%;
+  }
+  .nota-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 40px;
+    border-radius: 6px;
+    border: none;
+    background: #F0DCC8;
+    color: #7A5E42;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 120ms ease, filter 120ms ease;
+    padding: 0;
+  }
+  .nota-num { font-size: 12.5px; font-weight: 800; }
+  .nota-btn:hover { transform: translateY(-1px); }
+  .nota-ativa.nota-baixa { background: #B23A1A; color: #fff; }
+  .nota-ativa.nota-media { background: #F4941E; color: #3A2410; }
+  .nota-ativa.nota-alta { background: #1F7A5C; color: #fff; }
+
+  .opcoes-lista { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+  .opcao-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 13px 14px;
+    border-radius: 10px;
+    border: 1.5px solid #E7DACB;
+    background: #FFFFFF;
+    font-size: 14.5px;
+    color: #2B2B2B;
+    cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  .opcao-item:hover { border-color: #F4941E; }
+  .opcao-ativa { border-color: #C1440E; background: #FFF3E8; }
+
+  .opcao-letra {
+    flex: none;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #F0DCC8;
+    color: #7A5E42;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .opcao-ativa .opcao-letra { background: #C1440E; color: #fff; }
+
+  .opcao-check {
+    flex: none;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid #D8C6AE;
+    background: #FFFFFF;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .opcao-ativa .opcao-check {
+    background: #C1440E;
+    border-color: #C1440E;
+  }
+
+  .pergunta-opcional {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #A08A70;
+    margin: -6px 0 0;
+  }
+
+  .campo-texto {
+    width: 100%;
+    resize: vertical;
+    border-radius: 10px;
+    border: 1.5px solid #E7DACB;
+    padding: 12px 14px;
+    font-size: 14.5px;
+    font-family: inherit;
+    color: #2B2B2B;
+    outline: none;
+    margin-top: 4px;
+  }
+  .campo-texto:focus { border-color: #C1440E; }
+  .contador { align-self: flex-end; font-size: 11.5px; color: #A08A70; margin-top: -10px; }
+
+  .botao-primario {
+    background: #C1440E;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: background 200ms ease, filter 120ms ease, transform 100ms ease;
+  }
+  .botao-primario:hover:not(:disabled) { filter: brightness(1.05); }
+  .botao-primario:disabled { background: #C7C2BB; color: #fff; cursor: not-allowed; }
+  .botao-concluir:disabled { background: #C7C2BB; }
+  .botao-concluir:active:not(:disabled) { transform: scale(0.98); }
+
+  .botao-secundario {
+    background: transparent;
+    color: #2B2B2B;
+    border: 1.5px solid #E7DACB;
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .nav-duas-colunas { display: flex; gap: 10px; margin-top: 4px; }
+  .nav-duas-colunas .botao-primario,
+  .nav-duas-colunas .botao-secundario { flex: 1; margin-top: 0; }
+
+  .rodape {
+    border-top: 1px solid #EDEDED;
+    margin-top: 22px;
+    padding: 20px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .rodape-assinatura {
+    font-size: 13.5px;
+    color: #2B2B2B;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .rodape-icones { display: flex; gap: 10px; }
+  .icone-social {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #C1440E;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .rodape-ajuda { font-size: 12px; color: #8A8A8A; margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .loading-dot { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+"use strict";
+const { useState, useEffect, useRef } = React;
+/*
+  Protótipo 3: E-mail de indenização (Outlook) -> clique no CTA da pesquisa
+  Versão HTML autocontida — usa localStorage no lugar do window.storage
+  do ambiente de artifacts do Claude, para funcionar offline em
+  qualquer navegador, em qualquer computador, e ser hospedável no
+  GitHub Pages.
+*/
+const STORAGE_KEY_PREFIX = "pesquisa-pos-uso";
+const storage = {
+    async get(key) {
+        try {
+            const raw = window.localStorage.getItem(key);
+            if (raw === null)
+                return null;
+            return { key, value: raw };
+        }
+        catch (e) {
+            return null;
+        }
+    },
+    async set(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+            return { key, value };
+        }
+        catch (e) {
+            return null;
+        }
+    },
+    async delete(key) {
+        try {
+            window.localStorage.removeItem(key);
+            return { key, deleted: true };
+        }
+        catch (e) {
+            return null;
+        }
+    },
+};
+function useSessionId() {
+    const ref = useRef(null);
+    if (!ref.current) {
+        ref.current =
+            "resp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    }
+    return ref.current;
+}
+const MOTIVOS = [
+    { id: "A", label: "Rapidez da análise" },
+    { id: "B", label: "Clareza das informações recebidas" },
+    { id: "C", label: "Comunicação durante o processo" },
+    { id: "D", label: "Valor da indenização" },
+    { id: "E", label: "Outro" },
+];
+const MOTIVOS_RECUSADOS = [
+    { id: "A", label: "Eu esperava que essa situação estivesse coberta" },
+    { id: "B", label: "A comunicação não foi clara" },
+    { id: "C", label: "Demora na análise" },
+    { id: "D", label: "Dificuldade para acompanhar o processo" },
+    { id: "E", label: "Outro" },
+];
+const ENTENDIMENTO_OPCOES = [
+    { id: "A", label: "Sim" },
+    { id: "B", label: "Parcialmente" },
+    { id: "C", label: "Não" },
+];
+function NotaBotao({ n, ativa, onClick }) {
+    const faixa = n <= 6 ? "baixa" : n <= 8 ? "media" : "alta";
+    return (React.createElement("button", { onClick: () => onClick(n), "aria-pressed": ativa, "aria-label": `Nota ${n}`, className: `nota-btn nota-${faixa} ${ativa ? "nota-ativa" : ""}` },
+        React.createElement("span", { className: "nota-num" }, n)));
+}
+function BarraProgresso({ etapa, total }) {
+    const pct = Math.min(Math.max(etapa, 0), total) / total;
+    return (React.createElement("div", { className: "barra-progresso-wrap", "aria-hidden": "true" },
+        React.createElement("div", { className: "barra-progresso-trilho" },
+            React.createElement("div", { className: "barra-progresso-preenchida", style: { width: `${pct * 100}%` } }))));
+}
+function BannerLaranja({ children }) {
+    return (React.createElement("div", { className: "banner-laranja" },
+        React.createElement("h1", { className: "banner-titulo" }, children)));
+}
+function RodapeItau() {
+    return (React.createElement("footer", { className: "rodape" },
+        React.createElement("p", { className: "rodape-assinatura" },
+            "Atenciosamente,",
+            React.createElement("br", null),
+            React.createElement("strong", null, "Ita\u00FA Seguros S/A")),
+        React.createElement("div", { className: "rodape-icones" },
+            React.createElement("span", { className: "icone-social" }, "f"),
+            React.createElement("span", { className: "icone-social" }, "\uD835\uDD4F"),
+            React.createElement("span", { className: "icone-social" }, "\u25CE"),
+            React.createElement("span", { className: "icone-social" }, "\u25B6")),
+        React.createElement("p", { className: "rodape-ajuda" }, "Precisa de ajuda? Entre em contato com a gente pelo chat do app.")));
+}
+function PesquisaPorEmail() {
+    const sessionId = useSessionId();
+    const [fase, setFase] = useState("inbox");
+    const [segmento, setSegmento] = useState("pago");
+    const [etapa, setEtapa] = useState(1);
+    const [nota, setNota] = useState(null);
+    const [entendimento, setEntendimento] = useState(null);
+    const [motivos, setMotivos] = useState([]);
+    const [comentario, setComentario] = useState("");
+    const [salvando, setSalvando] = useState(false);
+    const [carregado, setCarregado] = useState(false);
+    function abrirEmail(seg) {
+        setSegmento(seg);
+        setFase("email");
+    }
+    function voltarParaInbox() {
+        setFase("inbox");
+    }
+    function voltarParaEmail() {
+        setFase("email");
+    }
+    function abrirPesquisa() {
+        setEtapa(1);
+        setNota(null);
+        setEntendimento(null);
+        setMotivos([]);
+        setComentario("");
+        setFase("pesquisa");
+    }
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await storage.get(`${STORAGE_KEY_PREFIX}:email:draft:${segmento}`);
+                if (res && res.value) {
+                    const draft = JSON.parse(res.value);
+                    if (draft.nota != null)
+                        setNota(draft.nota);
+                    if (draft.entendimento)
+                        setEntendimento(draft.entendimento);
+                    if (draft.motivos)
+                        setMotivos(draft.motivos);
+                    if (draft.comentario)
+                        setComentario(draft.comentario);
+                }
+            }
+            catch (e) { }
+            setCarregado(true);
+        })();
+    }, []);
+    async function salvarRascunho(next) {
+        try {
+            await storage.set(`${STORAGE_KEY_PREFIX}:email:draft:${segmento}`, JSON.stringify(Object.assign({ nota, entendimento, motivos, comentario }, next)));
+        }
+        catch (e) { }
+    }
+    async function finalizarEnvio() {
+        setSalvando(true);
+        const registro = {
+            id: sessionId,
+            segmento: segmento === "pago"
+                ? "CLIENTES PAGOS — CANAL E-MAIL"
+                : "CLIENTES RECUSADOS — CANAL E-MAIL",
+            nota,
+            entendimento,
+            motivos,
+            comentario: comentario.trim(),
+            enviadoEm: new Date().toISOString(),
+        };
+        try {
+            await storage.set(`${STORAGE_KEY_PREFIX}:respostas:email:${segmento}:${sessionId}`, JSON.stringify(registro));
+            await storage
+                .delete(`${STORAGE_KEY_PREFIX}:email:draft:${segmento}`)
+                .catch(() => { });
+        }
+        catch (e) {
+            // best-effort — não bloqueia a confirmação ao usuário
+        }
+        finally {
+            setSalvando(false);
+            setEtapa(4);
+        }
+    }
+    if (!carregado) {
+        return (React.createElement("div", { className: "tela-carregando" },
+            React.createElement("div", { className: "loading-dot" })));
+    }
+    // ---------- FASE 0: Caixa de entrada ----------
+    if (fase === "inbox") {
+        return (React.createElement("div", { className: "inbox-fundo" },
+            React.createElement("div", { className: "inbox-topo" },
+                React.createElement("span", { className: "inbox-titulo" }, "Caixa de Entrada")),
+            React.createElement("div", { className: "inbox-lista" },
+                React.createElement("button", { className: "inbox-item", onClick: () => abrirEmail("pago") },
+                    React.createElement("div", { className: "inbox-item-conteudo" },
+                        React.createElement("div", { className: "inbox-item-linha-topo" },
+                            React.createElement("span", { className: "inbox-item-remetente" }, "Ita\u00FA Seguros S/A"),
+                            React.createElement("span", { className: "inbox-item-hora" }, "09:14")),
+                        React.createElement("span", { className: "inbox-item-assunto" }, "Seu processo de acionamento foi finalizado"),
+                        React.createElement("span", { className: "inbox-item-preview" }, "Seu processo de acionamento foi finalizado e o pagamento da indeniza\u00E7\u00E3o ser\u00E1 realizado..."))),
+                React.createElement("button", { className: "inbox-item", onClick: () => abrirEmail("recusado") },
+                    React.createElement("div", { className: "inbox-item-conteudo" },
+                        React.createElement("div", { className: "inbox-item-linha-topo" },
+                            React.createElement("span", { className: "inbox-item-remetente" }, "Ita\u00FA Seguros S/A"),
+                            React.createElement("span", { className: "inbox-item-hora" }, "09:02")),
+                        React.createElement("span", { className: "inbox-item-assunto" }, "Retorno sobre o seu pedido de acionamento"),
+                        React.createElement("span", { className: "inbox-item-preview" }, "Analisamos seu pedido de acionamento da cobertura Bolsa Protegida e identificamos que..."))))));
+    }
+    const ehRecusado = segmento === "recusado";
+    // ---------- FASE 1: E-mail (Outlook) ----------
+    if (fase === "email") {
+        return (React.createElement("div", { className: "mail-fundo" },
+            React.createElement("div", { className: "mail-faixa-ribbon" },
+                React.createElement("button", { className: "mail-voltar-btn", onClick: voltarParaInbox }, "\u2190 Caixa de Entrada"),
+                React.createElement("span", null, "Responder"),
+                React.createElement("span", null, "Responder a Todos"),
+                React.createElement("span", null, "Encaminhar"),
+                React.createElement("span", { className: "mail-ribbon-sep" }),
+                React.createElement("span", null, "Todos os Aplicativos"),
+                React.createElement("span", { className: "mail-ribbon-sep" }),
+                React.createElement("span", null, "Mover"),
+                React.createElement("span", { className: "mail-ribbon-sep" }),
+                React.createElement("span", null, "Marcar como N\u00E3o Lida"),
+                React.createElement("span", null, "Categorizar")),
+            React.createElement("div", { className: "mail-remetente" },
+                React.createElement("span", { className: "mail-remetente-linha" }, "Ita\u00FA Seguros S/A <seguros@comunicacao.itau.com.br>"),
+                React.createElement("span", { className: "mail-destinatario-linha" }, "Para: voc\u00EA <seuemail@yahoo.com.br>")),
+            React.createElement("div", { className: "mail-aviso-imagens" }, "\u26A0 Para ajudar a proteger sua privacidade, o Outlook impediu o download autom\u00E1tico de algumas imagens desta mensagem."),
+            ehRecusado ? (React.createElement("div", { className: "mail-corpo" },
+                React.createElement("div", { className: "banner-laranja-email" },
+                    React.createElement("p", { className: "banner-titulo-email" }, "Finalizamos a an\u00E1lise do seu sinistro.")),
+                React.createElement("table", { className: "mail-tabela-info" },
+                    React.createElement("tbody", null,
+                        React.createElement("tr", null,
+                            React.createElement("td", null,
+                                React.createElement("strong", null, "N\u00FAmero do contrato:"),
+                                " 02202401712000000021")),
+                        React.createElement("tr", null,
+                            React.createElement("td", null,
+                                React.createElement("strong", null, "Acionamento:"),
+                                " 020171202400000788")))),
+                React.createElement("p", { className: "mail-saudacao" }, "Ol\u00E1! Tudo bem?"),
+                React.createElement("p", { className: "mail-paragrafo" }, "Agradecemos por ter nos procurado e confiado na nossa seguradora. Sabemos que passar por uma situa\u00E7\u00E3o de roubo ou furto \u00E9 muito dif\u00EDcil, e por isso queremos explicar com todo respeito e clareza o motivo da recusa do pedido de indeniza\u00E7\u00E3o."),
+                React.createElement("p", { className: "mail-paragrafo" },
+                    "Analisamos o seu pedido de acionamento da cobertura de",
+                    " ",
+                    React.createElement("strong", null, "Bolsa Protegida"),
+                    ". No entanto, verificamos no Boletim de Ocorr\u00EAncia que os bens roubados/furtados n\u00E3o estavam com o cliente que contratou o seguro no momento do evento."),
+                React.createElement("p", { className: "mail-rotulo" }, "POR QUE ISSO \u00C9 IMPORTANTE?"),
+                React.createElement("p", { className: "mail-paragrafo" }, "Para ter direito ao reembolso, \u00E9 necess\u00E1rio que os objetos estejam com o cliente no momento do roubo ou furto."),
+                React.createElement("p", { className: "mail-rotulo" }, "EXEMPLOS:"),
+                React.createElement("p", { className: "mail-paragrafo" },
+                    React.createElement("strong", null, "Cobertura v\u00E1lida:"),
+                    " item dentro da bolsa ou mochila que est\u00E1 nas m\u00E3os do cliente no momento do roubo/furto."),
+                React.createElement("p", { className: "mail-paragrafo" },
+                    React.createElement("strong", null, "Cobertura n\u00E3o v\u00E1lida:"),
+                    " se o cliente se afasta do item, mesmo que por pouco tempo, e ele \u00E9 roubado/furtado nesse per\u00EDodo."),
+                React.createElement("p", { className: "mail-paragrafo", style: { marginTop: 16 } }, "Por isso, informamos que o processo foi encerrado sem pagamento, conforme as Condi\u00E7\u00F5es Gerais do seguro contratado."),
+                React.createElement("div", { className: "cta-pesquisa-card" },
+                    React.createElement("p", { className: "cta-pesquisa-titulo" }, "Compartilhe a sua percep\u00E7\u00E3o"),
+                    React.createElement("p", { className: "cta-pesquisa-texto" }, "Sabemos que essa n\u00E3o \u00E9 a resposta que voc\u00EA esperava. Se quiser, conte pra gente o que podemos melhorar para os pr\u00F3ximos clientes."),
+                    React.createElement("button", { className: "cta-pesquisa-botao", onClick: abrirPesquisa }, "Queremos ouvir voc\u00EA")),
+                React.createElement("div", { className: "mail-caixa-cinza" },
+                    React.createElement("p", { className: "mail-paragrafo" },
+                        "Estas informa\u00E7\u00F5es tamb\u00E9m est\u00E3o dispon\u00EDveis em:",
+                        React.createElement("br", null),
+                        React.createElement("span", { className: "mail-link" }, "www.itau.com.br/seguros/consultaracionamento")),
+                    React.createElement("p", { className: "mail-paragrafo" },
+                        "Atenciosamente,",
+                        React.createElement("br", null),
+                        React.createElement("strong", null, "ITA\u00DA SEGUROS S/A"))),
+                React.createElement("p", { className: "mail-slogan" }, "O Ita\u00FA tem tudo pra voc\u00EA."),
+                React.createElement("div", { className: "mail-canais" },
+                    React.createElement("p", { className: "mail-canais-titulo" },
+                        "D\u00EA prefer\u00EAncia aos",
+                        React.createElement("br", null),
+                        "nossos canais",
+                        React.createElement("br", null),
+                        "digitais."),
+                    React.createElement("div", { className: "mail-canais-divisor" }),
+                    React.createElement("div", { className: "mail-canais-lista" },
+                        React.createElement("span", null, "\u2612 itau.com.br"),
+                        React.createElement("span", null, "\u2612 app no celular"))),
+                React.createElement("hr", { className: "mail-linha" }),
+                React.createElement("p", { className: "mail-rodape-tel" },
+                    "Tem alguma d\u00FAvida? Entre em contato com a gente. Nossos telefones est\u00E3o \u00E0 sua disposi\u00E7\u00E3o em",
+                    " ",
+                    React.createElement("span", { className: "mail-link" }, "www.itau.com.br/atendimento-itau/para-voce/telefones")))) : (React.createElement("div", { className: "mail-corpo" },
+                React.createElement("div", { className: "banner-laranja-email" },
+                    React.createElement("p", { className: "banner-titulo-email" }, "Seu processo de acionamento foi finalizado e o pagamento da indeniza\u00E7\u00E3o ser\u00E1 realizado.")),
+                React.createElement("table", { className: "mail-tabela-info" },
+                    React.createElement("tbody", null,
+                        React.createElement("tr", null,
+                            React.createElement("td", null,
+                                React.createElement("strong", null, "N\u00FAmero do contrato:"),
+                                " 02202401712000000013")),
+                        React.createElement("tr", null,
+                            React.createElement("td", null,
+                                React.createElement("strong", null, "Acionamento:"),
+                                " 020171202400000701")))),
+                React.createElement("p", { className: "mail-saudacao" }, "Ol\u00E1,"),
+                React.createElement("p", { className: "mail-paragrafo" },
+                    "Realizamos a an\u00E1lise do seu pedido de indeniza\u00E7\u00E3o da cobertura",
+                    " ",
+                    React.createElement("strong", null, "Bolsa Protegida"),
+                    "."),
+                React.createElement("p", { className: "mail-paragrafo" }, "Confira abaixo o(s) detalhe(s):"),
+                React.createElement("p", { className: "mail-rotulo" }, "ITENS INDENIZADOS NO SINISTRO:"),
+                React.createElement("p", { className: "mail-valor" }, "Iphone16 \u2013 R$ 1.700,00"),
+                React.createElement("p", { className: "mail-rotulo" }, "LIMITE M\u00C1XIMO DE INDENIZA\u00C7\u00C3O PARA A COBERTURA:"),
+                React.createElement("p", { className: "mail-valor" }, "R$ 2.500,00"),
+                React.createElement("p", { className: "mail-rotulo" }, "VALOR TOTAL INDENIZADO NO SINISTRO:"),
+                React.createElement("p", { className: "mail-valor" }, "R$ 1.700,00"),
+                React.createElement("p", { className: "mail-rotulo" }, "ITENS INDENIZADOS COM DEPRECIA\u00C7\u00C3O:"),
+                React.createElement("p", { className: "mail-valor" }, "Iphone16 \u2013 Valor: R$ 1.888,89 \u2013 Valor com deprecia\u00E7\u00E3o (10%): R$ 1.700,00"),
+                React.createElement("p", { className: "mail-nota-depreciacao" },
+                    React.createElement("strong", null, "DEPRECIA\u00C7\u00C3O:"),
+                    " \u00E9 a redu\u00E7\u00E3o do valor de um bem em consequ\u00EAncia do uso, idade, desgaste ou obsolesc\u00EAncia."),
+                React.createElement("div", { className: "cta-pesquisa-card" },
+                    React.createElement("p", { className: "cta-pesquisa-titulo" }, "Como foi sua experi\u00EAncia com a gente?"),
+                    React.createElement("p", { className: "cta-pesquisa-texto" }, "Sua indeniza\u00E7\u00E3o j\u00E1 foi confirmada. Conte pra gente como foi o processo \u2014 sua opini\u00E3o nos ajuda a melhorar cada vez mais."),
+                    React.createElement("button", { className: "cta-pesquisa-botao", onClick: abrirPesquisa }, "Avaliar minha experi\u00EAncia")),
+                React.createElement("div", { className: "mail-caixa-cinza" },
+                    React.createElement("p", { className: "mail-paragrafo" },
+                        "Estas informa\u00E7\u00F5es tamb\u00E9m est\u00E3o dispon\u00EDveis em:",
+                        React.createElement("br", null),
+                        React.createElement("span", { className: "mail-link" }, "www.itau.com.br/seguros/consultaracionamento")),
+                    React.createElement("p", { className: "mail-paragrafo" },
+                        "Atenciosamente,",
+                        React.createElement("br", null),
+                        React.createElement("strong", null, "ITA\u00DA SEGUROS S/A"))),
+                React.createElement("p", { className: "mail-slogan" }, "O Ita\u00FA tem tudo pra voc\u00EA."),
+                React.createElement("div", { className: "mail-canais" },
+                    React.createElement("p", { className: "mail-canais-titulo" },
+                        "D\u00EA prefer\u00EAncia aos",
+                        React.createElement("br", null),
+                        "nossos canais",
+                        React.createElement("br", null),
+                        "digitais."),
+                    React.createElement("div", { className: "mail-canais-divisor" }),
+                    React.createElement("div", { className: "mail-canais-lista" },
+                        React.createElement("span", null, "\u2612 itau.com.br"),
+                        React.createElement("span", null, "\u2612 app no celular"))),
+                React.createElement("hr", { className: "mail-linha" }),
+                React.createElement("p", { className: "mail-rodape-tel" },
+                    "Tem alguma d\u00FAvida? Entre em contato com a gente. Nossos telefones est\u00E3o \u00E0 sua disposi\u00E7\u00E3o em",
+                    " ",
+                    React.createElement("span", { className: "mail-link" }, "www.itau.com.br/atendimento-itau/para-voce/telefones"))))));
+    }
+    // ---------- FASE 2: Pesquisa (padrão carta Itaú) ----------
+    const motivosAtivos = ehRecusado ? MOTIVOS_RECUSADOS : MOTIVOS;
+    const TOTAL_ETAPAS = 3;
+    return (React.createElement("div", { className: "app-raiz" },
+        React.createElement("div", { className: "carta" },
+            React.createElement("button", { className: "pesquisa-voltar-btn", onClick: voltarParaEmail, "aria-label": "Voltar ao e-mail" }, "\u2190"),
+            etapa === 1 && (React.createElement(React.Fragment, null,
+                React.createElement(BannerLaranja, null, ehRecusado
+                    ? "Queremos entender sua experiência com a decisão do seu sinistro."
+                    : "Queremos saber sua opinião sobre a devolutiva do seu sinistro."),
+                React.createElement(BarraProgresso, { etapa: etapa, total: TOTAL_ETAPAS }),
+                React.createElement("div", { className: "corpo-carta" },
+                    React.createElement("p", { className: "saudacao" }, "Ol\u00E1."),
+                    ehRecusado ? (React.createElement("p", { className: "paragrafo" }, "Conclu\u00EDmos a an\u00E1lise do seu sinistro e, neste caso, a cobertura n\u00E3o foi aprovada. Mesmo assim, gostar\u00EDamos de ouvir voc\u00EA: sua opini\u00E3o nos ajuda a entender o que podemos melhorar na forma como conduzimos e comunicamos esse tipo de decis\u00E3o. S\u00E3o s\u00F3 3 perguntas r\u00E1pidas.")) : (React.createElement("p", { className: "paragrafo" }, "Conclu\u00EDmos a an\u00E1lise do seu sinistro. Agora, gostar\u00EDamos de ouvir voc\u00EA: sua opini\u00E3o nos ajuda a entender o que fizemos bem e o que podemos melhorar para os pr\u00F3ximos clientes. S\u00E3o s\u00F3 3 perguntas r\u00E1pidas.")),
+                    ehRecusado ? (React.createElement(React.Fragment, null,
+                        React.createElement("p", { className: "pergunta-titulo" }, "Voc\u00EA entendeu o motivo da decis\u00E3o do seu sinistro?"),
+                        React.createElement("div", { className: "opcoes-lista" }, ENTENDIMENTO_OPCOES.map((op) => (React.createElement("button", { key: op.id, className: `opcao-item ${entendimento === op.id ? "opcao-ativa" : ""}`, onClick: () => {
+                                setEntendimento(op.id);
+                                salvarRascunho({ entendimento: op.id });
+                                setTimeout(() => setEtapa(2), 220);
+                            } },
+                            React.createElement("span", { className: "opcao-letra" }, op.id),
+                            React.createElement("span", null, op.label))))))) : (React.createElement(React.Fragment, null,
+                        React.createElement("p", { className: "pergunta-titulo" }, "De 0 a 10, como voc\u00EA avalia sua experi\u00EAncia no processo do sinistro?"),
+                        React.createElement("div", { className: "notas-grade" }, Array.from({ length: 11 }, (_, i) => i).map((n) => (React.createElement(NotaBotao, { key: n, n: n, ativa: nota === n, onClick: (v) => {
+                                setNota(v);
+                                salvarRascunho({ nota: v });
+                                setTimeout(() => setEtapa(2), 220);
+                            } })))))),
+                    React.createElement(RodapeItau, null)))),
+            etapa === 2 && (React.createElement(React.Fragment, null,
+                React.createElement(BannerLaranja, null, ehRecusado
+                    ? "Queremos entender sua experiência com a decisão do seu sinistro."
+                    : "Queremos saber sua opinião sobre a devolutiva do seu sinistro."),
+                React.createElement(BarraProgresso, { etapa: etapa, total: TOTAL_ETAPAS }),
+                React.createElement("div", { className: "corpo-carta" },
+                    React.createElement("p", { className: "pergunta-titulo" }, ehRecusado
+                        ? "O que mais impactou sua experiência?"
+                        : "O que mais influenciou sua avaliação?"),
+                    React.createElement("p", { className: "pergunta-opcional" }, "Selecione uma ou mais op\u00E7\u00F5es"),
+                    React.createElement("div", { className: "opcoes-lista" }, motivosAtivos.map((m) => {
+                        const selecionado = motivos.includes(m.id);
+                        return (React.createElement("button", { key: m.id, className: `opcao-item ${selecionado ? "opcao-ativa" : ""}`, onClick: () => {
+                                const proximos = selecionado
+                                    ? motivos.filter((id) => id !== m.id)
+                                    : [...motivos, m.id];
+                                setMotivos(proximos);
+                                salvarRascunho({ motivos: proximos });
+                            } },
+                            React.createElement("span", { className: "opcao-check" }, selecionado ? "✓" : ""),
+                            React.createElement("span", null, m.label)));
+                    })),
+                    React.createElement("div", { className: "nav-duas-colunas" },
+                        React.createElement("button", { className: "botao-secundario", onClick: () => setEtapa(1) }, "Voltar"),
+                        React.createElement("button", { className: "botao-primario", disabled: motivos.length === 0, onClick: () => setEtapa(3) }, "Continuar")),
+                    React.createElement(RodapeItau, null)))),
+            etapa === 3 && (React.createElement(React.Fragment, null,
+                React.createElement(BannerLaranja, null, ehRecusado
+                    ? "Queremos entender sua experiência com a decisão do seu sinistro."
+                    : "Queremos saber sua opinião sobre a devolutiva do seu sinistro."),
+                React.createElement(BarraProgresso, { etapa: etapa, total: TOTAL_ETAPAS }),
+                React.createElement("div", { className: "corpo-carta" },
+                    React.createElement("p", { className: "pergunta-titulo" }, ehRecusado
+                        ? "Existe algo que poderíamos ter feito para tornar sua experiência melhor, mesmo com essa decisão?"
+                        : "O que poderíamos fazer para melhorar sua experiência?"),
+                    React.createElement("p", { className: "pergunta-opcional" }, "Opcional"),
+                    React.createElement("textarea", { className: "campo-texto", placeholder: ehRecusado
+                            ? "Deixe aqui sua percepção sobre como poderíamos ter feito uma experiência melhor."
+                            : "Deixe aqui sua percepção sobre como podemos melhorar sua experiência", value: comentario, onChange: (e) => {
+                            setComentario(e.target.value);
+                            salvarRascunho({ comentario: e.target.value });
+                        }, rows: 5, maxLength: 600 }),
+                    React.createElement("span", { className: "contador" },
+                        comentario.length,
+                        "/600"),
+                    React.createElement("div", { className: "nav-duas-colunas" },
+                        React.createElement("button", { className: "botao-secundario", onClick: () => setEtapa(2) }, "Voltar"),
+                        React.createElement("button", { className: "botao-primario botao-concluir", disabled: salvando, onClick: finalizarEnvio }, salvando ? "Enviando..." : "Concluir e enviar")),
+                    React.createElement(RodapeItau, null)))),
+            etapa === 4 && (React.createElement(React.Fragment, null,
+                React.createElement(BannerLaranja, null, "Obrigado pela sua resposta."),
+                React.createElement("div", { className: "corpo-carta" },
+                    React.createElement("p", { className: "saudacao" }, "Ol\u00E1."),
+                    ehRecusado ? (React.createElement("p", { className: "paragrafo" }, "Sua resposta foi registrada com sucesso e vai nos ajudar a melhorar. Sabemos que essa situa\u00E7\u00E3o n\u00E3o foi f\u00E1cil, e mesmo assim voc\u00EA pode contar com a gente sempre que precisar.")) : (React.createElement("p", { className: "paragrafo" }, "Sua avalia\u00E7\u00E3o foi registrada com sucesso e vai apoiar diretamente melhorias no processo de sinistros. Conte com o Ita\u00FA para futuros acionamentos.")),
+                    React.createElement(RodapeItau, null)))))));
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(PesquisaPorEmail, null));
+</script>
+</body>
+</html>
